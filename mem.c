@@ -1,8 +1,6 @@
 #include "stdio.h"
-#include "string.h"
 
-#include "opcodes.h"
-#include "mem.h"
+#include "emu.h"
 
 byte MEM[RAM_SIZE];
 
@@ -89,11 +87,11 @@ void decode(byte *b, int i) {
     }
 }
 
-void setByte(byte address, byte value) {
+void wb(word address, byte value) {
     MEM[address] = value;
 }
 
-byte getByte(byte address) {
+byte rb(word address) {
     // Mask the value to simulate actual memory behavior
     return MEM[address] & 0xFFFF;
 }

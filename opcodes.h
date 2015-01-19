@@ -1,5 +1,9 @@
 // Based on http://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
-enum OPCODE {
+
+#ifndef OPCODES_H
+#define OPCODES_H
+
+typedef enum {
     NOP         = 0x00,
     LD_BC_d16   = 0x01,
     LD_BC_A     = 0x02,
@@ -55,8 +59,8 @@ enum OPCODE {
     LD_SP_d16   = 0x31,
     LD_HLm_A    = 0x32,
     INC_SP      = 0x33,
-    INC_HL      = 0x34,
-    DEC_HL      = 0x35,
+    INC_pHL     = 0x34,
+    DEC_pHL     = 0x35,
     LD_HL_d8    = 0x36,
     SCF         = 0x37,
     JR_C_r8     = 0x38,
@@ -240,7 +244,7 @@ enum OPCODE {
                      
     LDH_a8_A    = 0xE0,
     POP_HL      = 0xE1,
-    LD_C_A      = 0xE2,
+    LD_pC_A     = 0xE2,
     // 0xE3 Undocumented
     // 0xE4 Undocumented
     PUSH_HL     = 0xE5,
@@ -257,7 +261,7 @@ enum OPCODE {
                      
     LDH_A_a8    = 0xF0,
     POP_AF      = 0xF1,
-    LD_A_C      = 0xF2,
+    LD_A_pC     = 0xF2,
     DI          = 0xF3,
     // 0xF4 Undocumented
     PUSH_AF     = 0xF5,
@@ -271,5 +275,5 @@ enum OPCODE {
     // 0xFD Undocumented
     CP_d8       = 0xFE,
     RST_38H     = 0xFF 
-};
-                     
+} OPCODE;
+#endif

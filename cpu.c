@@ -1,30 +1,48 @@
-typedef unsigned int byte;
+#include "emu.h"
 
-typedef struct State {
-    // Program Counter (16-bit)
-    byte pc;
-    
-    // Stack Pointer (16-bit)
-    byte sp;
+void execute(State *cpu) {
+    int op_len = 1;
 
-    // Registers (8-bit)
-    byte a;
-    byte b;
-    byte c;
-    byte d;
-    byte e;
+    switch (rb(cpu->pc)) {
+        case LD_B_B:
+            cpu->b = cpu->b;
+            break;
+        case LD_B_C:
+            cpu->b = cpu->c;
+            break;
+        case LD_B_D:
+            cpu->b = cpu->d;
+            break;
+        case LD_B_E:
+            cpu->b = cpu->e;
+            break;
+        case LD_B_H:
+            cpu->b = cpu->h;
+            break;
+        case LD_B_L:
+            cpu->b = cpu->l;
+            break;
+        case LD_B_HL:
+            // Does this work???
+            cpu->b = rb(cpu->h * 0x100 + cpu->l);
+            break;
+        case LD_B_A:
+            cpu->b = cpu->a;
+            break;
+    }
 
-    // Flags (8-bit)
-    // ---------------
-    // 7 6 5 4 3 2 1 0
-    // Z N H C 0 0 0 0
-    // ---------------
-    byte f;
+    cpu->pc += op_len;
+}
 
-    // Valid 16-bit combinations are 
-    // AF, BC, DE, and HL
-
-    // Memory Pointer (16-bit)
-    byte hl;
-} 
-
+const State STATE_DEFAULT = {
+    0x0000, // pc
+    0x0000, // sp
+    0x00,   // a
+    0x00,   // b
+    0x00,   // c
+    0x00,   // d
+    0x00,   // e
+    0x00,   // f
+    0x00,   // h
+    0x00    // l
+};
