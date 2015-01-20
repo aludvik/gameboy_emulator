@@ -32,10 +32,10 @@ typedef struct {
     // Memory Pointer (16-bit)
     byte h;
     byte l;
-} State; 
+} CPUState; 
 
-extern const State STATE_DEFAULT;
+extern const CPUState CPU_DEFAULT;
 
-void execute(State *cpu);
+void execute(CPUState *cpu);
 
 #endif

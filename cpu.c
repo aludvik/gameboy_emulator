@@ -1,6 +1,6 @@
 #include "emu.h"
 
-void execute(State *cpu) {
+void execute(CPUState *cpu) {
     int op_len = 1;
 
     switch (rb(cpu->pc)) {
@@ -34,7 +34,7 @@ void execute(State *cpu) {
     cpu->pc += op_len;
 }
 
-const State STATE_DEFAULT = {
+const CPUState CPU_DEFAULT = {
     0x0000, // pc
     0x0000, // sp
     0x00,   // a
