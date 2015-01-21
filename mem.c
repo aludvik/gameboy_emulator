@@ -143,3 +143,13 @@ byte rb(word address) {
         // return address + offset
     } 
 }
+
+void ww(word address, word value) {
+    // Write the least significant byte first
+    wb(address, value & 0x00FF);
+    wb(address + 1, value & 0xFF00);
+}
+
+word rw(word address) {
+    return rb(address) + (rb(address + 1) << 8);
+}
