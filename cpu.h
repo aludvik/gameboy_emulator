@@ -1,40 +1,42 @@
 #ifndef CPU_H
 #define CPU_H
 
-// *** Repeated typedef in mem.h ***
-typedef unsigned int byte;
-typedef unsigned int word;
+typedef unsigned int reg;
 
 typedef struct {
     // Program Counter (16-bit)
-    byte pc;
+    reg pc;
     
     // Stack Pointer (16-bit)
-    byte sp;
+    reg sp;
 
     // Registers (8-bit)
-    byte a;
-    byte b;
-    byte c;
-    byte d;
-    byte e;
+    reg a;
+    reg b;
+    reg c;
+    reg d;
+    reg e;
 
     // Flags (8-bit)
     // ---------------
     // 7 6 5 4 3 2 1 0
     // Z N H C 0 0 0 0
     // ---------------
-    byte f;
+    reg f;
 
     // Valid 16-bit combinations are 
     // AF, BC, DE, and HL
 
     // Memory Pointer (16-bit)
-    byte h;
-    byte l;
+    reg h;
+    reg l;
 } CPUState; 
 
 extern const CPUState CPU_DEFAULT;
+
+// Write a word into a register pair
+void reg_wpair(reg *r1, reg *r2, word value);
+void reg_rpair(reg *r1, reg *r2);
 
 void execute(CPUState *cpu);
 

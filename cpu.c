@@ -1,32 +1,55 @@
 #include "emu.h"
 
+// TODO: Check this... make sure it works with rw in mem.c
+// and that all endianess works correctly.
+void reg_wpair(reg *r1, reg *r2, word value) {
+    *r1 = value & 0xFF00;
+    *r2 = value & 0x00FF;
+}
+
+word reg_rpair(reg *r1, reg *r2) {
+    return *r2 + (*r1 << 8);
+}
+
 void execute(CPUState *cpu) {
-    int op_len = 1;
+    int op_len = 1,
+        cycles = 4;
 
     switch (rb(cpu->pc)) {
-        case LD_B_B:
+        case NOP: // Untested
+            break;
+        case LD_BC_d16: // Untested
+            reg_wpair(&(cpu->b), &(cpu->c), rw((cpu->pc) + 1));
+            op_len = 3;
+            cycles = 12;
+            break;
+        case LD_pBC_A: // Untested
+            wb(reg_rpair(&(cpu->b), &(cpu->c)), cpu->a);
+            cycles = 8;
+            break;
+        case LD_B_B: // Untested
             cpu->b = cpu->b;
             break;
-        case LD_B_C:
+        case LD_B_C: // Untested
             cpu->b = cpu->c;
             break;
-        case LD_B_D:
+        case LD_B_D: // Untested
             cpu->b = cpu->d;
             break;
-        case LD_B_E:
+        case LD_B_E: // Untested
             cpu->b = cpu->e;
             break;
-        case LD_B_H:
+        case LD_B_H: // Untested
             cpu->b = cpu->h;
             break;
-        case LD_B_L:
+        case LD_B_L: // Untested
             cpu->b = cpu->l;
             break;
-        case LD_B_HL:
+        case LD_B_HL: // Untested
             // Does this work???
-            cpu->b = rb(cpu->h * 0x100 + cpu->l);
-            break;
-        case LD_B_A:
+            cpu->b = rb(cpu->h * 0x100 + cpu->l); // consider using bit-shifts
+            break; // Untested
+        case LD_B_A: // Untested
             cpu->b = cpu->a;
             break;
     }
