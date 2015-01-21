@@ -6,7 +6,7 @@
 typedef enum {
     NOP         = 0x00,
     LD_BC_d16   = 0x01,
-    LD_BC_A     = 0x02,
+    LD_pBC_A     = 0x02,
     INC_BC      = 0x03,
     INC_B       = 0x04,
     DEC_B       = 0x05,
