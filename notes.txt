@@ -1,5 +1,11 @@
 Memory
 ------
+# Bytes, Words, and Nibbles
+In these notes and the documentation, I refer to
+data of size 2^8 as a byte, 2^16 as a word, and
+2^4 as a nibble. Memory is addressed by a word
+and each address stores a byte.
+
 # Endianess
 "The z80 is little endian because if you were 
 to store HL to memory, L would be written a byte 
