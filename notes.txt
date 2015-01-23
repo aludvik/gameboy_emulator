@@ -18,6 +18,12 @@ is little endian, the least significant byte is
 stored first. Eg. "JP, $0150" would store in ROM
 as "0xC3 0x50 0x01".
 
+Endianess only applies to how data is stored in 
+memory, it is not related to how data is stored
+in a register. Ie., the most significant byte of
+an address is stored in H and the least significant
+is stored in L.
+
 # MBC
 The Gameboy supports several ROM and RAM banking
 modes. The first 16kB of ROM (Bank 0) are always
