@@ -1,6 +1,8 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include "types.h"
+
 typedef unsigned int reg;
 
 typedef struct {
@@ -36,8 +38,10 @@ extern const CPUState CPU_DEFAULT;
 
 // Write a word into a register pair
 void reg_wpair(reg *r1, reg *r2, word value);
-void reg_rpair(reg *r1, reg *r2);
+word reg_rpair(reg *r1, reg *r2);
 
 void execute(CPUState *cpu);
+
+void printCPU(CPUState *cpu);
 
 #endif
