@@ -1,14 +1,13 @@
 #include "emu.h"
 
-// TODO: Check this... make sure it works with rw in mem.c
-// and that all endianess works correctly.
+// Endian
 void reg_wpair(reg *r1, reg *r2, word value) {
-    *r1 = value & 0xFF00;
+    *r1 = (value & 0xFF00) >> 8;
     *r2 = value & 0x00FF;
 }
 
 word reg_rpair(reg *r1, reg *r2) {
-    return *r2 + (*r1 << 8);
+    return *r1 + (*r2 << 8);
 }
 
 void execute(CPUState *cpu) {
@@ -56,6 +55,22 @@ void execute(CPUState *cpu) {
 
     cpu->pc += op_len;
 }
+
+void printCPU(CPUState *cpu) {
+    printf("-------------------------------- CPU --\n");
+    printf("| pc: %#06x", cpu->pc);
+    printf("        sp: %#06x        |\n", cpu->sp);
+    printf("|  a: %#04x", cpu->a);
+    printf("  b: %#04x", cpu->b);
+    printf("  c: %#04x", cpu->c);
+    printf("  d: %#04x |\n", cpu->d);
+    printf("|  e: %#04x", cpu->e);
+    printf("  f: %#04x", cpu->f);
+    printf("  h: %#04x", cpu->h);
+    printf("  l: %#04x |\n", cpu->l);
+    printf("---------------------------------------\n");
+}
+
 
 const CPUState CPU_DEFAULT = {
     0x0000, // pc
