@@ -6,7 +6,7 @@ const MEMState MEM_DEFAULT = {
     0,
     0,
     1
-}
+};
 
 // 0000-00FF
 // Overwritten by ROM Bank 0 after loading
@@ -90,7 +90,7 @@ void decode(byte *b, int i) {
             msg = "LD BC, %#010x %#010x";
             op_len = 3;
             break;
-        case LD_BC_A:   msg = "LD (BC), A"; break;
+        case LD_pBC_A:   msg = "LD (BC), A"; break;
         case INC_BC:    msg = "INC BC";     break;
         case INC_B:     msg = "INC B";      break;
         case DEC_B:     msg = "DEC B";      break;
@@ -126,13 +126,22 @@ void decode(byte *b, int i) {
     }
 }
 
-void wb(word address, byte value) {
-    if (address >= 0x0000 && address < 0xFFFF) {
-        // ROM, don't do anything
-    } else if (address >= 0xFFFF && address < 0x8000) {
-        // ROM, writes update banking
-    } 
-    // ... implement rest ...
+// Returns whether byte was written
+int wb(word address, byte value) {
+    if (address < 0xFFFF) {
+        if (address >= 0x0000 && address < 0x4000) {
+            // ROM, don't do anything
+            
+            // Temporary for debugging
+            ROM[address] = value;
+        } else if (address >= 0x4000 && address < 0x8000) {
+            // ROM, writes update banking
+        } 
+        // ... implement rest ...
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 byte rb(word address) {
@@ -144,12 +153,30 @@ byte rb(word address) {
     } 
 }
 
-void ww(word address, word value) {
+// Returns whether word was written
+int ww(word address, word value) {
     // Write the least significant byte first
-    wb(address, value & 0x00FF);
-    wb(address + 1, value & 0xFF00);
+    return wb(address, value & 0x00FF) || wb(address + 1, value & 0xFF00);
 }
 
 word rw(word address) {
     return rb(address) + (rb(address + 1) << 8);
+}
+
+void printMemory(byte start, byte end) {
+    int i;
+    printf("-------------------------- MEM ----------------------------\n");
+    while (start <= end) {
+        printf("| %#06x: ", start);
+        for (i = 0; (start + i) <= end && i < 8; i++) {
+            printf("%#04x  ", rb(start + i)); 
+        }
+        while (i < 8) {
+            printf("      ");
+            i++;
+        }
+        printf("|\n");
+        start += 8;
+    }
+    printf("-----------------------------------------------------------\n");
 }
