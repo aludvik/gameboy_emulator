@@ -36,6 +36,8 @@ void execute() {
         cycles = 4;
 
     // need to add flags...
+    // should they be reset at the beginning of
+    // each computation cycle?
     switch (rb(cpu.pc)) {
         case NOP:
             break;
@@ -61,6 +63,17 @@ void execute() {
             break;
         case LD_B_d8:
             cpu.b = rb(cpu.pc + 1);
+            op_len = 2;
+            cycles = 8;
+            break;
+        case RLCA:
+            if ((cpu.a >> 8) & 0x01 == 1) {
+                cpu.a = ((cpu.a << 1) & 0xFF) | 1; 
+                cpu.f = (cpu.f | (1 << 4)) & 0xFF;
+            } else {
+                cpu.a = (cpu.a << 1) & 0xFF;
+                cpu.f = (cpu.f & !(1 << 4)) & 0xFF;
+            }
             break;
         case LD_B_B:
             cpu.b = cpu.b;
