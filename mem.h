@@ -3,17 +3,26 @@
 
 #include "types.h"
 
-// Max ROM size is 2 MBytes
-#define MAX_ROM_SIZE 2*1024*1024
-#define RAM_SIZE 0xFFFF
+#define MEM_MAP 64*1024
+
+#define MAX_ROM_S 2*1024*1024
+#define MAX_EXT_RAM_S 128*1024
+
+#define BIOS_S 256
+#define VIDEO_RAM_S 8*1024
+#define EXT_RAM_S 8*1024
+#define INT_RAM_S 8*1024
+#define SPRITES_S 160
+#define IO_S 76
+#define OTHER_RAM_S 128
 
 typedef struct {
+    // Attributes
     int cartridge_type;
     int rom_size;
-    int bios_mapped;
+    int ram_size;
+    int bios_active;
 } MEMState;
-
-extern const MEMState MEM_DEFAULT;
 
 int loadRom(char fn[]);
 void dissassembleRom(byte rom[]);

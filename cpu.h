@@ -34,14 +34,14 @@ typedef struct {
     reg l;
 } CPUState; 
 
-extern const CPUState CPU_DEFAULT;
-
 // Write a word into a register pair
 void reg_wpair(reg *r1, reg *r2, word value);
 word reg_rpair(reg *r1, reg *r2);
 
-void execute(CPUState *cpu);
+void initCPU();
 
-void printCPU(CPUState *cpu);
+void execute();
+
+void printCPU();
 
 #endif

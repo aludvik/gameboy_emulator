@@ -2,15 +2,29 @@
 
 #include "emu.h"
 
-const MEMState MEM_DEFAULT = {
+static const MEMState MEM_DEFAULT = {
     0,
     0,
+    0, 
     1
 };
 
-// 0000-00FF
-// Overwritten by ROM Bank 0 after loading
-byte BIOS[0xFF + 1] = {
+static MEMState MEM;
+
+// Memory banks
+static byte ROM[MAX_ROM_S];         // 0000 - 7FFF (ROM uses banking)
+static byte VIDEO_RAM[VIDEO_RAM_S]; // 8000 - 9FFF
+static byte EXT_RAM[MAX_EXT_RAM_S]; // A000 - BFFF
+static byte INT_RAM[INT_RAM_S];     // C000 - DFFF 
+// Echo of internal ram at:            E000 - FDFF
+static byte SPRITES[SPRITES_S];     // FE00 - FE9F
+// Empty                               FEA0 - FEFF
+static byte IO[IO_S];               // FF00 - FF4B
+// Empty                               FF4C - FF7F
+static byte OTHER_RAM[OTHER_RAM_S]; // FF80 - FFFF
+
+static byte BIOS[BIOS_S];           // 0000 - 00FF (Before ROM loaded)
+static const byte BIOS_DEFAULT[BIOS_S] = {
     0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 
     0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
     0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 
@@ -45,7 +59,12 @@ byte BIOS[0xFF + 1] = {
     0xFB, 0x86, 0x20, 0xFE, 0x3E, 0x01, 0xE0, 0x50
 };
 
-byte ROM[MAX_ROM_SIZE];
+void initMEM() {
+    int i;
+    MEM = MEM_DEFAULT;
+    for (i = 0; i < BIOS_S; i++) BIOS[i] = BIOS_DEFAULT[i];
+    // Do anything else that needs doing...
+}
 
 int loadRom(char fn[]){
     // Open ROM for reading
@@ -56,7 +75,7 @@ int loadRom(char fn[]){
 
     // TODO: Does this need to descend or ascend???
     // Copy ROM into temporary array
-    for (i = 0, end = 0; i < MAX_ROM_SIZE && !end; i++) {
+    for (i = 0, end = 0; i < MAX_ROM_S && !end; i++) {
         if ((ROM[i] = getc(fin)) == EOF) {
             end = 1;
         }
@@ -65,18 +84,73 @@ int loadRom(char fn[]){
     return i - 1;
 }
 
+// Returns whether byte was written
+int wb(word address, byte value) {
+    if (address < 0xFFFF) {
+        if (address >= 0x0000 && address < 0x4000) {
+            // ROM, don't do anything
+            
+            // Temporary for debugging
+            ROM[address] = value;
+        } else if (address >= 0x4000 && address < 0x8000) {
+            // ROM, writes update banking
+        } 
+        // ... implement rest ...
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+byte rb(word address) {
+    // Mask the value to simulate actual memory behavior
+    if (address >= 0x0000 && address < 0xFFFF) {
+        return ROM[address] & 0xFFFF;
+    } else if (address >= 0xFFFF && address < 0x8000) {
+        // return address + offset
+    } 
+}
+
+// Returns whether word was written
+int ww(word address, word value) {
+    // Write the least significant byte first
+    return wb(address, value & 0x00FF) || wb(address + 1, value & 0xFF00);
+}
+
+word rw(word address) {
+    return rb(address) + (rb(address + 1) << 8);
+}
+
 void dissassembleRom(byte rom[]) {
     int i;
     int messages_per_line = 1;
     int lines_before_break = 40;
 
-    for (i = 0; i < MAX_ROM_SIZE; i++) {
+    for (i = 0; i < MAX_ROM_S; i++) {
         printf("%#06x: ", i);
         decode(rom, i);
         printf("\t\t");
         if (!(i % messages_per_line)) printf("\n");
         if (!(i % lines_before_break)) getchar();
     }
+}
+
+void printMemory(byte start, byte end) {
+    int i;
+    printf("-------------------------- MEM ----------------------------\n");
+    while (start <= end) {
+        printf("| %#06x: ", start);
+        for (i = 0; (start + i) <= end && i < 8; i++) {
+            printf("%#04x  ", rb(start + i)); 
+        }
+        while (i < 8) {
+            printf("      ");
+            i++;
+        }
+        printf("|\n");
+        start += 8;
+    }
+    printf("-----------------------------------------------------------\n");
 }
 
 // Max length of return message is NN
@@ -126,57 +200,3 @@ void decode(byte *b, int i) {
     }
 }
 
-// Returns whether byte was written
-int wb(word address, byte value) {
-    if (address < 0xFFFF) {
-        if (address >= 0x0000 && address < 0x4000) {
-            // ROM, don't do anything
-            
-            // Temporary for debugging
-            ROM[address] = value;
-        } else if (address >= 0x4000 && address < 0x8000) {
-            // ROM, writes update banking
-        } 
-        // ... implement rest ...
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-byte rb(word address) {
-    // Mask the value to simulate actual memory behavior
-    if (address >= 0x0000 && address < 0xFFFF) {
-        return ROM[address] & 0xFFFF;
-    } else if (address >= 0xFFFF && address < 0x8000) {
-        // return address + offset
-    } 
-}
-
-// Returns whether word was written
-int ww(word address, word value) {
-    // Write the least significant byte first
-    return wb(address, value & 0x00FF) || wb(address + 1, value & 0xFF00);
-}
-
-word rw(word address) {
-    return rb(address) + (rb(address + 1) << 8);
-}
-
-void printMemory(byte start, byte end) {
-    int i;
-    printf("-------------------------- MEM ----------------------------\n");
-    while (start <= end) {
-        printf("| %#06x: ", start);
-        for (i = 0; (start + i) <= end && i < 8; i++) {
-            printf("%#04x  ", rb(start + i)); 
-        }
-        while (i < 8) {
-            printf("      ");
-            i++;
-        }
-        printf("|\n");
-        start += 8;
-    }
-    printf("-----------------------------------------------------------\n");
-}
