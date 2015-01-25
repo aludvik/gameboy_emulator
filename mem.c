@@ -3,28 +3,33 @@
 #include "emu.h"
 
 static const MEMState MEM_DEFAULT = {
-    0,
-    0,
-    0, 
-    1
+    1,    // bios active
+    0,    // cartridge type
+    0,    // mem controller
+    0,    // external ram type
+    0,    // has battery
+    0x00, // rom size
+    0x00, // ram size
+    1,    // rom bank
+    1,    // ram bank
+    0x00  // interrupt register
 };
 
 static MEMState MEM;
 
 // Memory banks
-static byte ROM[MAX_ROM_S];         // 0000 - 7FFF (ROM uses banking)
-static byte VIDEO_RAM[VIDEO_RAM_S]; // 8000 - 9FFF
-static byte EXT_RAM[MAX_EXT_RAM_S]; // A000 - BFFF
-static byte INT_RAM[INT_RAM_S];     // C000 - DFFF 
-// Echo of internal ram at:            E000 - FDFF
-static byte SPRITES[SPRITES_S];     // FE00 - FE9F
-// Empty                               FEA0 - FEFF
-static byte IO[IO_S];               // FF00 - FF4B
-// Empty                               FF4C - FF7F
-static byte OTHER_RAM[OTHER_RAM_S]; // FF80 - FFFF
+static byte ROM[MAX_ROM_SIZE];          // 0000 - 7FFF (ROM uses banking)
+static byte VIDEO_RAM[VIDEO_RAM_SIZE];  // 8000 - 9FFF
+static byte EXT_RAM[MAX_EXT_RAM_SIZE];  // A000 - BFFF
+static byte INT_RAM[INT_RAM_SIZE];      // C000 - DFFF 
+// Echo of internal ram at:                E000 - FDFF
+static byte SPRITE_OAM[SPRITE_OAM_SIZE];// FE00 - FE9F
+// Empty                                   FEA0 - FEFF
+static byte IO[IO_SIZE];                // FF00 - FF4B
+// Empty                                   FF4C - FF7F
+static byte ZERO_RAM[ZERO_RAM_SIZE];  // FF80 - FFFF
 
-static byte BIOS[BIOS_S];           // 0000 - 00FF (Before ROM loaded)
-static const byte BIOS_DEFAULT[BIOS_S] = {
+static const byte BIOS[BIOS_SIZE] = {   // 0000 - 00FF (Before ROM loaded)
     0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 
     0xCB, 0x7C, 0x20, 0xFB, 0x21, 0x26, 0xFF, 0x0E,
     0x11, 0x3E, 0x80, 0x32, 0xE2, 0x0C, 0x3E, 0xF3, 
@@ -62,7 +67,12 @@ static const byte BIOS_DEFAULT[BIOS_S] = {
 void initMEM() {
     int i;
     MEM = MEM_DEFAULT;
-    for (i = 0; i < BIOS_S; i++) BIOS[i] = BIOS_DEFAULT[i];
+    fillZeros(VIDEO_RAM, VIDEO_RAM_SIZE);
+    fillZeros(EXT_RAM, MAX_EXT_RAM_SIZE);
+    fillZeros(INT_RAM, INT_RAM_SIZE);
+    fillZeros(SPRITE_OAM, SPRITE_OAM_SIZE);
+    fillZeros(IO, IO_SIZE);
+    fillZeros(ZERO_RAM, ZERO_RAM_SIZE);
     // Do anything else that needs doing...
 }
 
@@ -86,29 +96,91 @@ int loadRom(char fn[]){
 
 // Returns whether byte was written
 int wb(word address, byte value) {
-    if (address < 0xFFFF) {
-        if (address >= 0x0000 && address < 0x4000) {
-            // ROM, don't do anything
-            
-            // Temporary for debugging
-            ROM[address] = value;
-        } else if (address >= 0x4000 && address < 0x8000) {
-            // ROM, writes update banking
-        } 
-        // ... implement rest ...
-        return 1;
+    int success = 1;
+    if (address >= ROM_START               && address < VIDEO_RAM_START)    {
+        // ROM/RAM bank switching
+
+    } else if (address >= VIDEO_RAM_START  && address < EXT_RAM_START)      {
+        VIDEO_RAM[address - VIDEO_RAM_START] = value;
+
+    } else if (address >= EXT_RAM_START    && address < INT_RAM_START)      {
+        EXT_RAM[(address - EXT_RAM_START) + (SWITCH_RAM_SIZE * MEM.ram_bank)] = value;
+
+    } else if (address >= INT_RAM_START    && address < ECHO_START)         {
+        INT_RAM[address - INT_RAM_START] = value;
+
+    } else if (address >= ECHO_START       && address < SPRITE_OAM_START)   {
+        INT_RAM[address - ECHO_START] = value;
+
+    } else if (address >= SPRITE_OAM_START && address < EMPTY1_START)       {
+        SPRITE_OAM[address - SPRITE_OAM_START] = value;
+
+    } else if (address >= EMPTY1_START     && address < IO_START)           {
+        // TODO: Verify this doesn't need to be implemented
+        success = 0;
+
+    } else if (address >= IO_START         && address < EMPTY2_START)       {
+        IO[address - IO_START] = value;
+
+    } else if (address >= EMPTY2_START     && address < ZERO_RAM_START)    {
+        success = 0;
+
+    } else if (address >= ZERO_RAM        && address < INTERRUPT_REGISTER) {
+        ZERO_RAM[address - ZERO_RAM_START] = value;
+
+    } else if (address = INTERRUPT_REGISTER) {
+        MEM.interrupt = value;
     } else {
-        return 0;
+        success = 0;
     }
+    return success;
 }
 
 byte rb(word address) {
-    // Mask the value to simulate actual memory behavior
-    if (address >= 0x0000 && address < 0xFFFF) {
-        return ROM[address] & 0xFFFF;
-    } else if (address >= 0xFFFF && address < 0x8000) {
-        // return address + offset
-    } 
+    byte value// Mask the value to simulate actual memory behavior
+    if (address >= ROM_START               && address < VIDEO_RAM_START)    {
+        if (address < SWITCH_ROM_START) {
+            if (MEM.bios_active && address < BIOS_SIZE) {
+                value = BIOS[address];
+            } else {
+                value = ROM[address];
+            }
+        } else if (address >= SWITCH_ROM_START) {
+            value = ROM[address + (SWITCH_ROM_SIZE * (MEM.rom_bank - 1))];
+        }
+
+    } else if (address >= VIDEO_RAM_START  && address < EXT_RAM_START)      {
+        value = VIDEO_RAM[address - VIDEO_RAM_START];
+
+    } else if (address >= EXT_RAM_START    && address < INT_RAM_START)      {
+        value = EXT_RAM[(address - EXT_RAM_START) + (SWITCH_RAM_SIZE * MEM.ram_bank)];
+
+    } else if (address >= INT_RAM_START    && address < ECHO_START)         {
+        value = INT_RAM[address - INT_RAM_START];
+
+    } else if (address >= ECHO_START       && address < SPRITE_OAM_START)   {
+        value = INT_RAM[address - ECHO_START];
+
+    } else if (address >= SPRITE_OAM_START && address < EMPTY1_START)       {
+        value = SPRITE_OAM[address - SPRITE_OAM_START];
+
+    } else if (address >= EMPTY1_START     && address < IO_START)           {
+        value = 0x00;
+
+    } else if (address >= IO_START         && address < EMPTY2_START)       {
+        value = IO[address - IO_START];
+
+    } else if (address >= EMPTY2_START     && address < ZERO_RAM_START)    {
+        value = 0x00;
+
+    } else if (address >= ZERO_RAM        && address < INTERRUPT_REGISTER) {
+        value = ZERO_RAM[address - ZERO_RAM_START];
+
+    } else if (address = INTERRUPT_REGISTER) {
+        value = MEM.interrupt;
+    }
+
+    return value & 0xFF; // Memory stores bytes
 }
 
 // Returns whether word was written
@@ -173,7 +245,7 @@ void decode(byte *b, int i) {
             op_len = 2;
             break;
         case RLCA:      msg = "RLCA";       break;
-        case LD_a16_SP:
+        case LD_pa16_SP:
             msg = "LD %#010x %#010x, SP";
             op_len = 3;
             break;
@@ -197,6 +269,13 @@ void decode(byte *b, int i) {
         printf(msg, b+1);
     } else {
         printf(msg);
+    }
+}
+
+void fillZeros(byte b[], int l){
+    int i;
+    for (i = 0; i < l; i++) {
+        b[i] = 0x00;
     }
 }
 

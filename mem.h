@@ -3,30 +3,68 @@
 
 #include "types.h"
 
-#define MEM_MAP 64*1024
+#define MEM_MAP             64*1024
 
-#define MAX_ROM_S 2*1024*1024
-#define MAX_EXT_RAM_S 128*1024
+#define MAX_ROM_SIZE        2*1024*1024
+#define MAX_EXT_RAM_SIZE    128*1024
 
-#define BIOS_S 256
-#define VIDEO_RAM_S 8*1024
-#define EXT_RAM_S 8*1024
-#define INT_RAM_S 8*1024
-#define SPRITES_S 160
-#define IO_S 76
-#define OTHER_RAM_S 128
+#define BIOS_SIZE           256
+#define SWITCH_ROM_SIZE     16*1024
+#define SWITCH_RAM_SIZE     8*1024
+#define VIDEO_RAM_SIZE      8*1024
+#define EXT_RAM_SIZE        8*1024
+#define INT_RAM_SIZE        8*1024
+#define SPRITE_OAM_SIZE     160
+#define IO_SIZE             76
+#define ZERO_RAM_SIZE      128
+
+#define ROM_START           0x0000
+#define SWITCH_ROM_START    0x4000
+#define VIDEO_RAM_START     0x8000
+#define EXT_RAM_START       0xA000
+#define INT_RAM_START       0xC000
+#define ECHO_START          0xE000
+#define SPRITE_OAM_START    0xFE00
+#define EMPTY1_START        0xFEA0
+#define IO_START            0xFF00
+#define EMPTY2_START        0xFF4C
+#define ZERO_RAM_START      0xFF80
+#define INTERRUPT_REGISTER  0xFFFF
 
 typedef struct {
     // Attributes
-    int cartridge_type;
-    int rom_size;
-    int ram_size;
     int bios_active;
+    
+    int cartridge_type; // See gameboy docs
+
+    int mem_controller; // 0 - None, 1 - MBC1, 2 - MBC2, 
+                        // 3 - MBC3, 5 - MBC5
+
+    int ext_ram;        // 0 - None, 1 - RAM, 2 - SRAM
+    int battery;        // 0 - None, 1 - Yes
+
+    byte rom_size;      // 0 - 256Kbit = 32KByte  = 2 banks
+                        // 1 - 512Kbit = 64KByte  = 4 banks
+                        // 2 - 1Mbit   = 128KByte = 8 banks
+                        // 3 - 2Mbit   = 256KByte = 16 banks
+                        // 4 - 4Mbit   = 512KByte = 32 banks
+                        // 5 - 8Mbit   = 1MByte   = 64 banks
+                        // 6 - 16Mbit  = 2MByte   = 128 banks
+
+    byte ram_size;      // 0 - None
+                        // 1 - 16kBit = 2kB = 1 bank
+                        // 2 - 64kBit = 8kB = 1 bank
+                        // 3 - 256kBit = 32kB = 4 banks
+                        // 4 - 1MBit =128kB =16 banks
+
+    int rom_bank;
+    int ram_bank;
+
+    byte interrupt;
 } MEMState;
 
 int loadRom(char fn[]);
 void dissassembleRom(byte rom[]);
-
 void decode(byte *b, int i);
 
 int wb(word address, byte value);
@@ -36,5 +74,6 @@ int ww(word address, word value);
 byte rw(word address);
 
 void printMemory(byte start, byte end);
+void fillZeros(byte b[], int l);
 
 #endif
