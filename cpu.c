@@ -67,14 +67,21 @@ void execute() {
             cycles = 8;
             break;
         case RLCA:
-            if ((cpu.a >> 8) & 0x01 == 1) {
+            // TODO: Faster way?
+            if ((cpu.a >> 7) & 0x01 == 1) {
                 cpu.a = ((cpu.a << 1) & 0xFF) | 1; 
-                cpu.f = (cpu.f | (1 << 4)) & 0xFF;
+                cpu.f = 1 << 4;
+                // cpu.f = (cpu.f | (1 << 4)) & 0xFF;
             } else {
                 cpu.a = (cpu.a << 1) & 0xFF;
-                cpu.f = (cpu.f & !(1 << 4)) & 0xFF;
+                cpu.f = 0;
+                // cpu.f = (cpu.f & !(1 << 4)) & 0xFF;
             }
             break;
+        case LD_pa16_SP:
+            // Store SP in the address pointed to by a16??
+            op_len = 3;
+            cycles = 20;
         case LD_B_B:
             cpu.b = cpu.b;
             break;

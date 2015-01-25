@@ -12,7 +12,7 @@ typedef enum {
     DEC_B       = 0x05,
     LD_B_d8     = 0x06,
     RLCA        = 0x07,
-    LD_a16_SP   = 0x08,
+    LD_pa16_SP  = 0x08,
     ADD_HL_BC   = 0x09,
     LD_A_BC     = 0x0A,
     DEC_BC      = 0x0B,
