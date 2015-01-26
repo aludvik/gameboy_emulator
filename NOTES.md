@@ -1,3 +1,15 @@
+# Memory Bank Controllers
+The memory state shall be stored in a struct 
+"MEMState", which will hold the information
+present in the ROM (cartridge type, ROM size,
+RAM size, etc.). Each of the memory bank
+controllers shall be encapsulated in an 
+additional struct. Each memory bank controller
+will exist as a static variable at the top level 
+in the mem.c/h files. Functions shall be used
+to extract relevant information from the memory 
+state and memory bank controller structs.
+
 # Static variables
 Rather than storing everything in a struct to 
 emulate OOP, Im trying something different and

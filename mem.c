@@ -10,12 +10,18 @@ static const MEMState MEM_DEFAULT = {
     0,    // has battery
     0x00, // rom size
     0x00, // ram size
-    1,    // rom bank
-    1,    // ram bank
     0x00  // interrupt register
 };
 
+static const MBC1State MBC1_DEFAULT = {
+    0,
+    0,
+    0,
+    0
+}
+
 static MEMState MEM;
+static MBC1State MBC1;
 
 // Memory banks
 static byte ROM[MAX_ROM_SIZE];          // 0000 - 7FFF (ROM uses banking)
@@ -27,7 +33,7 @@ static byte SPRITE_OAM[SPRITE_OAM_SIZE];// FE00 - FE9F
 // Empty                                   FEA0 - FEFF
 static byte IO[IO_SIZE];                // FF00 - FF4B
 // Empty                                   FF4C - FF7F
-static byte ZERO_RAM[ZERO_RAM_SIZE];  // FF80 - FFFF
+static byte ZERO_RAM[ZERO_RAM_SIZE];    // FF80 - FFFF
 
 static const byte BIOS[BIOS_SIZE] = {   // 0000 - 00FF (Before ROM loaded)
     0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 
@@ -67,6 +73,7 @@ static const byte BIOS[BIOS_SIZE] = {   // 0000 - 00FF (Before ROM loaded)
 void initMEM() {
     int i;
     MEM = MEM_DEFAULT;
+    MBC1 = MBC1_DEFAULT;
     fillZeros(VIDEO_RAM, VIDEO_RAM_SIZE);
     fillZeros(EXT_RAM, MAX_EXT_RAM_SIZE);
     fillZeros(INT_RAM, INT_RAM_SIZE);
@@ -90,6 +97,10 @@ int loadRom(char fn[]){
             end = 1;
         }
     }
+
+    // Set cartridge_type
+    // Set mem_controller
+    // 
     
     return i - 1;
 }
@@ -97,14 +108,47 @@ int loadRom(char fn[]){
 // Returns whether byte was written
 int wb(word address, byte value) {
     int success = 1;
+    int i;
+
     if (address >= ROM_START               && address < VIDEO_RAM_START)    {
-        // ROM/RAM bank switching
+        switch (MEM.cart_type) {
+            case 0x02:
+            case 0x03:
+                if (address < 0x2000) {
+                    MBC1.ram_on = (value & 0x0F == 0x0A);
+                } else if (address >= 0x2000 && address < 0x4000) {
+                    // Disable 0x00, 0x20, 0x40, 0x60
+                    // Clear first 5 bits, 0x7F restricts to only 7 bits
+                    MBC1.rom_bank &= !0x1F & 0x7F; 
+                    MBC1.rom_bank += value & 0x1F; // Set bits
+                } else if (address >= 0x4000 && address < 0x6000) {
+                    if (MBC1.mode == 0) {
+                        MBC1.rom_bank &= !0x60 & 0x7F; // Clear bits 5-6
+                        MBC1.rom_bank += value & 0x1f;
+                    } else if (MBC1.mode == 1) {
+                        // Disable accessing upper 2 bits of MBC1.rom_bank
+                        MBC1.ram_bank = value & 0x03;
+                    }
+                } else if (address >= 0x6000 && address < 0x8000) {
+                    MBC1.mode = value;
+                }
+                break;
+        }
 
     } else if (address >= VIDEO_RAM_START  && address < EXT_RAM_START)      {
         VIDEO_RAM[address - VIDEO_RAM_START] = value;
 
     } else if (address >= EXT_RAM_START    && address < INT_RAM_START)      {
-        EXT_RAM[(address - EXT_RAM_START) + (SWITCH_RAM_SIZE * MEM.ram_bank)] = value;
+        switch (MEM.cart_type) {
+            case 0x02:
+            case 0x03:
+                if (MCB1.mode == 1 && MBC1.ram_on) {
+                    i =  address - EXT_RAM_START
+                    i += SWITCH_RAM_SIZE * MBC1.ram_bank
+                    EXT_RAM[i] = value;
+                }
+                break;
+        }
 
     } else if (address >= INT_RAM_START    && address < ECHO_START)         {
         INT_RAM[address - INT_RAM_START] = value;
@@ -137,7 +181,7 @@ int wb(word address, byte value) {
 }
 
 byte rb(word address) {
-    byte value// Mask the value to simulate actual memory behavior
+    byte value; // Mask the value to simulate actual memory behavior
     if (address >= ROM_START               && address < VIDEO_RAM_START)    {
         if (address < SWITCH_ROM_START) {
             if (MEM.bios_active && address < BIOS_SIZE) {
