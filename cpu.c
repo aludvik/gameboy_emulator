@@ -1,13 +1,21 @@
 #include "emu.h"
 
 // Endian
-void reg_wpair(reg *r1, reg *r2, word value) {
+void rpw(reg *r1, reg *r2, word value) {
     *r1 = (value & 0xFF00) >> 8;
     *r2 = value & 0x00FF;
 }
 
-word reg_rpair(reg *r1, reg *r2) {
-    return *r1 + (*r2 << 8);
+word rpr(reg r1, reg r2) {
+    return r1 + (r2 << 8);
+}
+
+void rInc(reg *r) {
+    *r = (*r + 1) & 0xFF; 
+}
+
+void rDec(reg *r) {
+    *r = (*r - 1) & 0xFF; 
 }
 
 static const CPUState CPU_DEFAULT = {
@@ -34,6 +42,7 @@ void initCPU() {
 void execute() {
     int op_len = 1,
         cycles = 4;
+    byte sum;
 
     // need to add flags...
     // should they be reset at the beginning of
@@ -42,12 +51,12 @@ void execute() {
         case NOP:
             break;
         case LD_BC_d16: // Checked
-            reg_wpair(&(cpu.b), &(cpu.c), rw((cpu.pc) + 1));
+            rpw(&(cpu.b), &(cpu.c), rw((cpu.pc) + 1));
             op_len = 3;
             cycles = 12;
             break;
         case LD_pBC_A:
-            wb(reg_rpair(&(cpu.b), &(cpu.c)), cpu.a);
+            wb(rpr(cpu.b, cpu.c), cpu.a);
             cycles = 8;
             break;
         case INC_BC:
@@ -56,10 +65,10 @@ void execute() {
             if (!cpu.c) cpu.b = (cpu.b + 1) & 0xFF;
             break;
         case INC_B: 
-            cpu.b = (cpu.b + 1) & 0xFF; 
+            rInc(&(cpu.b));
             break;
         case DEC_B: 
-            cpu.b = (cpu.b - 1) & 0xFF; 
+            rDec(&(cpu.b));
             break;
         case LD_B_d8:
             cpu.b = rb(cpu.pc + 1);
@@ -79,9 +88,33 @@ void execute() {
             }
             break;
         case LD_pa16_SP:
-            // Store SP in the address pointed to by a16??
-            op_len = 3;
-            cycles = 20;
+            ww( rw(cpu.pc + 1), cpu.sp );
+            op_len = 3; cycles = 20;
+        case ADD_HL_BC:
+            sum = rpr(cpu.h, cpu.l) + rpr(cpu.b, cpu.c);
+            rpw(&(cpu.h), &(cpu.l), sum);
+            cycles = 8;
+            break;
+        case LD_A_pBC:
+            cpu.a = rb(rpr(cpu.b, cpu.c));
+            cycles = 8;
+            break;
+        case DEC_BC:
+            // Need to handle overflow
+            cycles = 8;
+            break;
+        case INC_C:
+            rInc(&(cpu.c));
+            // Z0H-
+            break;
+        case DEC_C:
+            rDec(&(cpu.c));
+            // Z1H-
+            break;
+        case LD_C_d8:
+            cpu.c = rb(cpu.pc + 1);
+            op_len = 2; cycles = 8;
+            break;
         case LD_B_B:
             cpu.b = cpu.b;
             break;
