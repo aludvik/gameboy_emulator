@@ -34,13 +34,15 @@ typedef struct {
     reg l;
 } CPUState; 
 
+typedef struct {
+    int op_len;
+    int cycles;
+} CPUUpdate;
+
 // Write a word into a register pair
 void rpw(reg *r1, reg *r2, word value);
 // Read a word from a register pair
 word rpr(reg r1, reg r2);
-
-void rInc(reg *r);
-void rDec(reg *r);
 
 void initCPU();
 
