@@ -1,3 +1,11 @@
+# Bytes
+
+Turn on byte 3      x |= 0000 0100
+Turn off byte 3     x &= 1111 1011
+
+Turn on byte n      x |= (1 << n)
+Turn off byte n     x &= ~(1 << n)
+
 # Memory Bank Controllers
 The memory state shall be stored in a struct 
 "MEMState", which will hold the information

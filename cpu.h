@@ -3,6 +3,11 @@
 
 #include "types.h"
 
+#define CPU_FLAG_C 0x10
+#define CPU_FLAG_H 0x20
+#define CPU_FLAG_N 0x40
+#define CPU_FLAG_Z 0x80
+
 typedef unsigned int reg;
 
 typedef struct {
@@ -40,9 +45,9 @@ typedef struct {
 } CPUUpdate;
 
 // Write a word into a register pair
-void rpw(reg *r1, reg *r2, word value);
+void wrp(reg *r1, reg *r2, word value);
 // Read a word from a register pair
-word rpr(reg r1, reg r2);
+word rrp(reg r1, reg r2);
 
 void initCPU();
 
